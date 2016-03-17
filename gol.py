@@ -63,6 +63,30 @@ class GOL:
 			y = random.randint(0,self.rows)
 			self.board.add((x,y))
 
+
+class Music:
+# Handles the playing of music
+
+	def __init__(self, gol):
+		self.playingColumn = 0
+		self.gol = gol
+
+	def getColumnPitches(self, column):
+		pitches = set()
+		for cell in self.gol.board:
+			if cell[1] == column:
+				pitch = self.gol.rows -1 - cell[0]
+				pitches.add(pitch)
+		return pitches
+
+	def playColumn(self):
+		self.pitches = self.getColumnPitches(self.playingColumn)
+		for pitch in self.pitches:
+			# Play with audio library
+			pass
+		self.playingColumn += 1
+
+
 class Interface:
 # Class that represents the interface and all its elements. Automatically initializes GOL class.
 
@@ -74,13 +98,16 @@ class Interface:
 		self.canvasSize = self.windowHeight
 		self.cellSize = self.windowHeight / self.gol.rows
 
+		# Initialize music
+		self.music = Music(self.gol)
+
 		# Interface elements
 		self.root = Tk()
 		self.root.title("GOL")
 		self.root.minsize(width=self.windowWidth, height=self.windowHeight)
 		self.root.maxsize(width=self.windowWidth, height=self.windowHeight)
 
-		self.root.attributes('-fullscreen', True)
+		#self.root.attributes('-fullscreen', True)
 		self.canvas = Canvas(self.root, width=self.canvasSize, height=self.canvasSize, background = "black")
 		# Buttons
 		self.playPauseButton = Button(self.root, text="Play/Pause", command=self.playPauseButton)
@@ -126,6 +153,7 @@ class Interface:
 	def timerFired(self):
 		if not self.gol.paused:
 			self.gol.generation()
+			self.music.playColumn()
 		self.redrawAll()
 		self.canvas.after(self.gol.timerDelay, self.timerFired)
 
