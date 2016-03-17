@@ -15,6 +15,7 @@ class GOL:
 		self.begin = [3]
 		# Begin paused
 		self.paused = True
+		self.timerDelay = 10 #milliseconds
 		self.neighbors = [(-1,-1), (-1, 0), (-1, 1),
 						  ( 0,-1),          ( 0, 1),
 						  ( 1,-1), ( 1, 0), ( 1, 1)]
@@ -51,69 +52,77 @@ class GOL:
 				count += 1
 		return count
 
+class Interface:
+# Class that represents the interface and all its elements. Automatically initializes GOL class.
+
+	def __init__(self, gol):
+		# Initialize game of life instance
+		self.gol = gol
+		self.cellSize = 20 #pixels
+		self.windowWidth = self.gol.cols * self.cellSize
+		self.windowHeight = self.gol.rows * self.cellSize
+
+		# Interface elements
+		self.root = Tk()
+		self.canvas = Canvas(self.root, width=self.windowWidth, height=self.windowHeight, background = "black")
+
+		# Interface layout
+		self.canvas.pack()
+
+		# Bind events
+		# Drawing with left click
+		self.root.bind("<Button-1>", lambda event: self.mousePressed(event))
+		self.root.bind("<B1-Motion>", lambda event: self.mousePressed(event))
+		# Keyboard press events
+		self.root.bind("<Key>", lambda event: self.keyPressed(event))
+		# Responsive to window size
+		self.root.bind("<Configure>", lambda event: self.windowSizeChanged(event))
+
+		self.drawMode = "draw"
+
+	def run(self):
+		self.timerFired()
+		self.root.mainloop()
+
+	def timerFired(self):
+		if not self.gol.paused:
+			self.gol.generation()
+		self.redrawAll()
+		self.canvas.after(self.gol.timerDelay, self.timerFired)
+
+	def redrawAll(self):
+		self.canvas.delete(ALL)
+		for cell in self.gol.board:
+			row, col = cell
+			self.canvas.create_rectangle((self.cellSize*col, self.cellSize*row), (self.cellSize*(col+1), self.cellSize*(row+1)), fill = "white")
+		self.canvas.update()
+
+	def mousePressed(self, event):
+		row = event.y // self.cellSize
+		col = event.x // self.cellSize
+		if self.drawMode == "draw":
+			self.gol.board.add((row, col))
+		elif self.drawMode == "erase":
+			self.gol.board.discard((row, col))
+		self.canvas.update()
+
+	def keyPressed(self, event):
+		if event.keysym == "space":
+			self.gol.paused = not self.gol.paused
+		elif event.keysym == "Up":
+			self.gol.timerDelay //= 10
+		elif event.keysym == "Down":
+			self.gol.timerDelay *= 10
+		elif event.keysym == "e":
+			self.drawMode = "erase"
+		self.canvas.update()
+
+	def windowSizeChanged(self, event):
+		self.cellSize = event.height / self.gol.cols
+		self.redrawAll()
 
 
-def gameOfLife(rows, cols):
-	# Initialize game of life instance
-	gol = GOL(rows, cols)
-	gol.cellSize = 20 # pixels
-	gol.windowWidth = gol.cols * gol.cellSize
-	gol.windowHeight = gol.rows * gol.cellSize
-	gol.timerDelay = 10 # milliseconds
-
-	# Create the root and the canvas
-	root = Tk()
-	canvas = Canvas(root, width=gol.windowWidth, height=gol.windowHeight, background = "black")
-	canvas.pack()
-
-	# Drawing with left click
-	root.bind("<Button-1>", lambda event: mousePressed(event, canvas, gol))
-	root.bind("<B1-Motion>", lambda event: mousePressed(event, canvas, gol))
-	# Erasing with right click
-	root.bind("<Button-3>", lambda event: mousePressed(event, canvas, gol))
-	root.bind("<B3-Motion>", lambda event: mousePressed(event, canvas, gol))
-	# Keyboard press events
-	root.bind("<Key>", lambda event: keyPressed(event, canvas, gol))
-	# Responsive to window size
-	root.bind("<Configure>", lambda event: windowSizeChanged(event, canvas, gol))
-
-	timerFired(canvas, gol)
-	root.mainloop()
-
-
-def redrawAll(canvas, gol):
-	canvas.delete(ALL)
-	for cell in gol.board:
-		row, col = cell
-		canvas.create_rectangle((gol.cellSize*col, gol.cellSize*row), (gol.cellSize*(col+1), gol.cellSize*(row+1)), fill = "white")
-	canvas.update()
-
-def timerFired(canvas, gol):
-	if not gol.paused:
-		gol.generation()
-	redrawAll(canvas, gol)
-	canvas.after(gol.timerDelay, timerFired, canvas, gol)
-
-def mousePressed(event, canvas, gol):
-	row = event.y // gol.cellSize
-	col = event.x // gol.cellSize
-	gol.board.add((row, col))
-	canvas.update()
-
-def keyPressed(event, canvas, gol):
-	if event.keysym == "space":
-		gol.paused = not gol.paused
-	elif event.keysym == "Up":
-		gol.timerDelay //= 10
-		print(gol.timerDelay)
-	elif event.keysym == "Down":
-		gol.timerDelay *= 10
-		print(gol.timerDelay)
-	canvas.update()
-
-def windowSizeChanged(event, canvas, gol):
-	gol.cellSize = event.height / gol.cols
-	redrawAll(canvas, gol)
-
-
-gameOfLife(50, 50)
+# RUN
+gol = GOL(20, 20)
+main = Interface(gol)
+main.run()
