@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter.ttk import *
+import random
 
 class GOL:
 # Class that represents the Game of Life object
@@ -52,32 +53,70 @@ class GOL:
 				count += 1
 		return count
 
+	def clear(self):
+		self.board = set()
+
+	def random(self, n):
+		self.clear()
+		for n in range(n):
+			x = random.randint(0,self.cols)
+			y = random.randint(0,self.rows)
+			self.board.add((x,y))
+
 class Interface:
 # Class that represents the interface and all its elements. Automatically initializes GOL class.
 
 	def __init__(self, gol):
 		# Initialize game of life instance
 		self.gol = gol
-		self.cellSize = 20 #pixels
-		self.windowWidth = self.gol.cols * self.cellSize
-		self.windowHeight = self.gol.rows * self.cellSize
+		self.windowWidth = 800
+		self.windowHeight = 480
+		self.canvasSize = self.windowHeight
+		self.cellSize = self.windowHeight / self.gol.rows
 
 		# Interface elements
 		self.root = Tk()
-		self.canvas = Canvas(self.root, width=self.windowWidth, height=self.windowHeight, background = "black")
+		self.root.title("GOL")
+		self.root.minsize(width=self.windowWidth, height=self.windowHeight)
+		self.root.maxsize(width=self.windowWidth, height=self.windowHeight)
+
+		self.root.attributes('-fullscreen', True)
+		self.canvas = Canvas(self.root, width=self.canvasSize, height=self.canvasSize, background = "black")
+		# Buttons
+		self.playPauseButton = Button(self.root, text="Play/Pause", command=self.playPauseButton)
+		self.slowerButton = Button(self.root, text="Slower", command=self.slowerButton)
+		self.fasterButton = Button(self.root, text="Faster", command=self.fasterButton)
+		self.pencilEraserButton = Button(self.root, text="Pencil/Eraser", command=self.pencilEraserButton)
+		self.clearButton = Button(self.root, text="Clear", command=self.clearButton)
+		self.randomButton = Button(self.root, text="Random", command=self.randomButton)
 
 		# Interface layout
-		self.canvas.pack()
+		padding = 5
+		self.canvas.grid(row=0, column=0, rowspan=2)
+		self.playPauseButton.grid(row=0, column=2, sticky="NSEW")
+		self.slowerButton.grid(row=0, column=1, sticky="NSEW")
+		self.fasterButton.grid(row=0, column=3, sticky="NSEW")
+		self.pencilEraserButton.grid(row=1, column=1, sticky="NSEW")
+		self.clearButton.grid(row=1, column=2, sticky="NSEW")
+		self.randomButton.grid(row=1, column=3, sticky="NSEW")
+
+		self.root.grid_columnconfigure(0, minsize=480)
+		self.root.grid_columnconfigure(1, weight=1, pad=5)
+		self.root.grid_columnconfigure(2, weight=1, pad=5)
+		self.root.grid_columnconfigure(3, weight=1, pad=5)
+		#self.root.grid_rowconfigure(0, weight=1)
+		#self.root.grid_rowconfigure(1, weight=1)
+		#self.root.grid_rowconfigure(2, weight=1)
+		#self.root.grid_rowconfigure(3, weight=0)
 
 		# Bind events
 		# Drawing with left click
-		self.root.bind("<Button-1>", lambda event: self.mousePressed(event))
-		self.root.bind("<B1-Motion>", lambda event: self.mousePressed(event))
+		self.canvas.bind("<Button-1>", lambda event: self.mousePressed(event))
+		self.canvas.bind("<B1-Motion>", lambda event: self.mousePressed(event))
 		# Keyboard press events
 		self.root.bind("<Key>", lambda event: self.keyPressed(event))
-		# Responsive to window size
-		self.root.bind("<Configure>", lambda event: self.windowSizeChanged(event))
-
+		self.root.bind("<Escape>", lambda event: self.root.attributes("-fullscreen", False))
+		
 		self.drawMode = "draw"
 
 	def run(self):
@@ -98,31 +137,55 @@ class Interface:
 		self.canvas.update()
 
 	def mousePressed(self, event):
-		row = event.y // self.cellSize
-		col = event.x // self.cellSize
-		if self.drawMode == "draw":
-			self.gol.board.add((row, col))
-		elif self.drawMode == "erase":
-			self.gol.board.discard((row, col))
-		self.canvas.update()
+		if event.x < self.canvasSize:
+			row = event.y // self.cellSize
+			col = event.x // self.cellSize
+			if self.drawMode == "draw":
+				self.gol.board.add((row, col))
+			elif self.drawMode == "erase":
+				self.gol.board.discard((row, col))
+			self.redrawAll()
 
 	def keyPressed(self, event):
 		if event.keysym == "space":
-			self.gol.paused = not self.gol.paused
+			self.playPauseButton()
 		elif event.keysym == "Up":
-			self.gol.timerDelay //= 10
+			self.fasterButton()
 		elif event.keysym == "Down":
-			self.gol.timerDelay *= 10
-		elif event.keysym == "e":
-			self.drawMode = "erase"
+			self.slowerButton()
+		elif event.keysym == "c":
+			self.clearButton()
+		elif event.keysym == "r":
+			self.randomButton()
 		self.canvas.update()
 
-	def windowSizeChanged(self, event):
-		self.cellSize = event.height / self.gol.cols
-		self.redrawAll()
+	def playPauseButton(self):
+		self.gol.paused = not self.gol.paused
 
+	def slowerButton(self):
+		if self.gol.timerDelay == 0:
+			self.gol.timerDelay = 1
+		elif self.gol.timerDelay < 1000:
+			self.gol.timerDelay *= 10
+		print(self.gol.timerDelay)
+
+	def fasterButton(self):
+		self.gol.timerDelay //= 10
+		print(self.gol.timerDelay)
+
+	def pencilEraserButton(self):
+		if self.drawMode == "draw":	self.drawMode = "erase"
+		elif self.drawMode == "erase": self.drawMode = "draw"
+
+	def clearButton(self):
+		self.gol.clear()
+		self.gol.paused = True
+
+	def randomButton(self):
+		self.gol.random(self.gol.rows)
+		self.gol.paused = True
 
 # RUN
-gol = GOL(20, 20)
+gol = GOL(50, 50)
 main = Interface(gol)
 main.run()
