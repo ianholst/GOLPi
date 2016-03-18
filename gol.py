@@ -332,6 +332,7 @@ class Interface:
 			self.LEDButton.config(image=self.LEDOffIcon)
 		else:
 			self.music.leds.displaying = True
+			self.music.leds.pinSetUp()
 			self.LEDButton.config(image=self.LEDOnIcon)
 
 	def sensorButton(self):
