@@ -82,9 +82,17 @@ class Music:
 	def playColumn(self):
 		self.pitches = self.getColumnPitches(self.playingColumn)
 		for pitch in self.pitches:
-			# Play with audio library
-			pass
+			self.playPitch(pitch)
+			note = pitch % 5
+			self.lightLED(note)
 		self.playingColumn = (self.playingColumn + 1) % self.gol.cols
+		# GPIO cleanup
+
+	def playPitch(self, pitch):
+		# Play with audio library
+
+	def lightLED(self, note):
+		# GPIO write
 
 
 class Interface:
