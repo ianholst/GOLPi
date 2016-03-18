@@ -75,7 +75,7 @@ class Music:
 		pitches = set()
 		for cell in self.gol.board:
 			if cell[1] == column:
-				pitch = self.gol.rows -1 - cell[0]
+				pitch = self.gol.rows - 1 - cell[0]
 				pitches.add(pitch)
 		return pitches
 
@@ -84,7 +84,7 @@ class Music:
 		for pitch in self.pitches:
 			# Play with audio library
 			pass
-		self.playingColumn += 1
+		self.playingColumn = (self.playingColumn + 1) % self.gol.cols
 
 
 class Interface:
