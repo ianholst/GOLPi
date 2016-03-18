@@ -1,6 +1,16 @@
 from tkinter import *
 from tkinter.ttk import *
 import random
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(18,GPIO.OUT)
+GPIO.setup(19,GPIO.OUT)
+GPIO.setup(20,GPIO.OUT)
+GPIO.setup(21,GPIO.OUT)
+GPIO.setup(22,GPIO.OUT)
+GPIO.setup(23,GPIO.OUT)
+GPIO.setup(24,GPIO.OUT)
 
 class GOL:
 # Class that represents the Game of Life object
@@ -70,7 +80,7 @@ class Music:
 	def __init__(self, gol):
 		self.playingColumn = 0
 		self.gol = gol
-
+		self.pins={0:19,1:20,2:21,3:22,4:23}
 	def getColumnPitches(self, column):
 		pitches = set()
 		for cell in self.gol.board:
@@ -92,8 +102,10 @@ class Music:
 		# Play with audio library
 
 	def lightLED(self, note):
-		# GPIO write
-
+		GPIO.cleanup()
+		GPIO.output(18,GPIO.HIGH)
+		GPIO.output(24,GPIO.HIGH)
+		GPIO.output(self.pins[note],GPIO.HIGH)
 
 class Interface:
 # Class that represents the interface and all its elements. Automatically initializes GOL class.
