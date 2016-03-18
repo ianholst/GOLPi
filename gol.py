@@ -161,7 +161,7 @@ class Interface:
 		self.root.minsize(width=self.windowWidth, height=self.windowHeight)
 		self.root.maxsize(width=self.windowWidth, height=self.windowHeight)
 
-		#self.root.attributes('-fullscreen', True)
+		self.root.attributes('-fullscreen', True)
 		self.canvas = Canvas(self.root, width=self.canvasSize, height=self.canvasSize, background = "black")
 		# Buttons
 		self.playPauseButton = Button(self.root, text="Play/Pause", command=self.playPauseButton)
