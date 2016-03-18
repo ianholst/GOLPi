@@ -5,7 +5,7 @@ import random
 import pyglet
 import wave
 import time
-import threading
+#import threading
 
 class GOL:
 # Class that represents the Game of Life object
@@ -65,7 +65,7 @@ class GOL:
 		self.clear()
 		for row in range(self.rows):
 			for col in range(self.cols):
-				if random.randint(0,3) == 1:
+				if random.randint(0,10) == 1:
 					self.board.add((col,row))
 
 
@@ -82,6 +82,7 @@ class Music:
 					21:"D6", 22:"F6", 23:"G6", 24:"A6"}
 		self.leds = LED()
 		self.notePins = {0:19,1:20,2:21,3:22,4:23}
+		pyglet.options['audio'] = ('directsound', 'silent')
 
 
 	def playColumn(self):
@@ -327,6 +328,7 @@ class Interface:
 	def LEDButton(self):
 		if self.music.leds.displaying:
 			self.music.leds.displaying = False
+			self.music.leds.turnOffLEDs()
 			self.LEDButton.config(image=self.LEDOffIcon)
 		else:
 			self.music.leds.displaying = True
