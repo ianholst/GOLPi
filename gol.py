@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter.ttk import *
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 import random
 import pyglet
 import wave
@@ -81,6 +81,7 @@ class Music:
 					14:"A4", 15:"C5", 16:"D5", 17:"F5", 18:"G5", 19:"A5", 20:"C6", 
 					21:"D6", 22:"F6", 23:"G6", 24:"A6"}
 		self.leds = LED()
+		leds.pinSetUp()
 		self.notePins = {0:19,1:20,2:21,3:22,4:23}
 		pyglet.options['audio'] = ('directsound', 'openal', 'silent')
 
@@ -167,9 +168,9 @@ class Interface:
 		# Interface elements
 		self.root = Tk()
 		self.root.title("GOL")
-		#self.root.minsize(width=self.windowWidth, height=self.windowHeight)
-		#self.root.maxsize(width=self.windowWidth, height=self.windowHeight)
-		#self.root.attributes('-fullscreen', True)
+		self.root.minsize(width=self.windowWidth, height=self.windowHeight)
+		self.root.maxsize(width=self.windowWidth, height=self.windowHeight)
+		self.root.attributes('-fullscreen', True)
 		self.canvas = Canvas(self.root, width=self.canvasSize, height=self.canvasSize, background = "black")
 
 		# Load images
@@ -331,7 +332,6 @@ class Interface:
 			self.LEDButton.config(image=self.LEDOffIcon)
 		else:
 			self.music.leds.displaying = True
-			self.music.leds.pinSetUp()
 			self.LEDButton.config(image=self.LEDOnIcon)
 
 	def sensorButton(self):
