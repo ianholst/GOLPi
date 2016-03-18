@@ -81,7 +81,6 @@ class Music:
 					14:"A4", 15:"C5", 16:"D5", 17:"F5", 18:"G5", 19:"A5", 20:"C6", 
 					21:"D6", 22:"F6", 23:"G6", 24:"A6"}
 		self.leds = LED()
-		leds.pinSetUp()
 		self.notePins = {0:19,1:20,2:21,3:22,4:23}
 		pyglet.options['audio'] = ('directsound', 'openal', 'silent')
 
@@ -135,7 +134,6 @@ class LED:
 			GPIO.output(pin,GPIO.LOW)
 
 	def lightLED(self, pin):
-		self.pinSetUp()
 		GPIO.output(pin,GPIO.HIGH)
 
 	def turnOffLEDs(self):
@@ -169,7 +167,7 @@ class Interface:
 		self.root = Tk()
 		self.root.title("GOL")
 		self.root.minsize(width=self.windowWidth, height=self.windowHeight)
-		self.root.maxsize(width=self.windowWidth, height=self.windowHeight)
+		#self.root.maxsize(width=self.windowWidth, height=self.windowHeight)
 		self.root.attributes('-fullscreen', True)
 		self.canvas = Canvas(self.root, width=self.canvasSize, height=self.canvasSize, background = "black")
 
@@ -229,9 +227,7 @@ class Interface:
 		self.canvas.bind("<B1-Motion>", lambda event: self.mousePressed(event))
 		self.drawMode = "draw"
 		# Keyboard press events
-		self.root.bind("<Key>", lambda event: self.keyPressed(event))
 		self.root.bind("<Escape>", lambda event: self.root.attributes("-fullscreen", False))
-		
 
 	def run(self):
 		self.timerFired()
@@ -262,19 +258,6 @@ class Interface:
 				self.gol.board.add((row, col))
 			elif self.drawMode == "erase":
 				self.gol.board.discard((row, col))
-		self.canvas.update()
-
-	def keyPressed(self, event):
-		if event.keysym == "space":
-			self.playPauseButton()
-		elif event.keysym == "Up":
-			self.fasterButton()
-		elif event.keysym == "Down":
-			self.slowerButton()
-		elif event.keysym == "c":
-			self.clearButton()
-		elif event.keysym == "r":
-			self.randomButton()
 		self.canvas.update()
 
 	def playPauseButton(self):
@@ -339,7 +322,7 @@ class Interface:
 		pass
 
 # RUN
-gol = GOL(50, 50)
+gol = GOL(25, 25)
 main = Interface(gol)
 main.run()
 main.music.leds.turnOffLEDs()
