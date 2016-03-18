@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter.ttk import *
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 import random
 import pyglet
 import wave
@@ -21,7 +21,9 @@ class GOL:
 		self.begin = [3]
 		# Begin paused
 		self.paused = True
-		self.timerDelay = 100 #milliseconds
+		self.speeds = [1,10,100,250,500,1000] #milliseconds
+		self.speedIndex = 3
+		self.timerDelay = self.speeds[self.speedIndex]
 		self.neighbors = [(-1,-1), (-1, 0), (-1, 1),
 						  ( 0,-1),          ( 0, 1),
 						  ( 1,-1), ( 1, 0), ( 1, 1)]
@@ -65,7 +67,7 @@ class GOL:
 		self.clear()
 		for row in range(self.rows):
 			for col in range(self.cols):
-				if random.randint(0,10) == 1:
+				if random.randint(0,8) == 1:
 					self.board.add((col,row))
 
 
@@ -83,7 +85,6 @@ class Music:
 		self.leds = LED()
 		self.notePins = {0:19,1:20,2:21,3:22,4:23}
 		pyglet.options['audio'] = ('directsound', 'openal', 'silent')
-
 
 	def playColumn(self):
 		if self.leds.displaying:
@@ -137,14 +138,6 @@ class LED:
 		GPIO.output(pin,GPIO.HIGH)
 
 	def turnOffLEDs(self):
-		GPIO.setmode(GPIO.BCM)
-		GPIO.setup(18,GPIO.OUT)
-		GPIO.setup(19,GPIO.OUT)
-		GPIO.setup(20,GPIO.OUT)
-		GPIO.setup(21,GPIO.OUT)
-		GPIO.setup(22,GPIO.OUT)
-		GPIO.setup(23,GPIO.OUT)
-		GPIO.setup(24,GPIO.OUT)
 		for pin in range(18,25):
 			GPIO.output(pin,GPIO.LOW)
 
@@ -194,7 +187,7 @@ class Interface:
 		self.pencilEraserButton = Button(self.root, image=self.eraserIcon, command=self.pencilEraserButton)
 		self.clearButton = Button(self.root, image=self.clearIcon, command=self.clearButton)
 		self.randomButton = Button(self.root, image=self.randomIcon, command=self.randomButton)
-		self.speedLabel = Label(self.root, text="Speed: " + str(1000/self.gol.timerDelay) + " generations/second")
+		self.speedLabel = Label(self.root, text="Speed: " + str(int(1000/self.gol.timerDelay)) + " generations/second")
 		self.musicButton = Button(self.root, image=self.musicOffIcon, command=self.musicButton)
 		self.LEDButton = Button(self.root, image=self.LEDOffIcon, command=self.LEDButton)
 		self.sensorButton = Button(self.root, image=self.sensorOffIcon, command=self.sensorButton)
@@ -269,16 +262,16 @@ class Interface:
 			self.playPauseButton.config(image=self.playIcon)
 
 	def slowerButton(self):
-		if self.gol.timerDelay == 0:
-			self.gol.timerDelay = 1
-		elif self.gol.timerDelay < 1000:
-			self.gol.timerDelay *= 10
-			self.speedLabel.config(text="Speed: " + str(1000/self.gol.timerDelay) + " generations/second")
+		if self.gol.timerDelay != self.gol.speeds[-1]:
+			self.gol.speedIndex += 1
+			self.gol.timerDelay = self.gol.speeds[self.gol.speedIndex]
+			self.speedLabel.config(text="Speed: " + str(int(1000/self.gol.timerDelay)) + " generations/second")
 
 	def fasterButton(self):
-		if self.gol.timerDelay > 1:
-			self.gol.timerDelay //= 10
-		self.speedLabel.config(text="Speed: " + str(1000/self.gol.timerDelay) + " generations/second")
+		if self.gol.timerDelay != self.gol.speeds[0]:
+			self.gol.speedIndex -= 1
+			self.gol.timerDelay = self.gol.speeds[self.gol.speedIndex]
+			self.speedLabel.config(text="Speed: " + str(int(1000/self.gol.timerDelay)) + " generations/second")
 
 	def pencilEraserButton(self):
 		if self.drawMode == "draw":
