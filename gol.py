@@ -1,16 +1,11 @@
 from tkinter import *
 from tkinter.ttk import *
-import random
 import RPi.GPIO as GPIO
-
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(18,GPIO.OUT)
-GPIO.setup(19,GPIO.OUT)
-GPIO.setup(20,GPIO.OUT)
-GPIO.setup(21,GPIO.OUT)
-GPIO.setup(22,GPIO.OUT)
-GPIO.setup(23,GPIO.OUT)
-GPIO.setup(24,GPIO.OUT)
+import random
+import pyaudio
+import wave
+import time
+import threading
 
 class GOL:
 # Class that represents the Game of Life object
@@ -80,32 +75,71 @@ class Music:
 	def __init__(self, gol):
 		self.playingColumn = 0
 		self.gol = gol
-		self.pins={0:19,1:20,2:21,3:22,4:23}
+		self.pins = {0:19,1:20,2:21,3:22,4:23}
+		self.notes = {0:"C2", 1:"D2", 2:"F2", 3:"G2", 4:"A2", 5:"C3", 6:"D3", 
+					7:"F3", 8:"G3", 9:"A3", 10:"C4", 11:"D4", 12:"F4", 13:"G4", 
+					14:"A4", 15:"C5", 16:"D5", 17:"F5", 18:"G5", 19:"A5", 20:"C6", 
+					21:"D6", 22:"F6", 23:"G6", 24:"A6"}
+	def pinSetUp(self):
+		GPIO.setmode(GPIO.BCM)
+		GPIO.setup(18,GPIO.OUT)
+		GPIO.setup(19,GPIO.OUT)
+		GPIO.setup(20,GPIO.OUT)
+		GPIO.setup(21,GPIO.OUT)
+		GPIO.setup(22,GPIO.OUT)
+		GPIO.setup(23,GPIO.OUT)
+		GPIO.setup(24,GPIO.OUT)
+		GPIO.output(18,GPIO.HIGH)
+		GPIO.output(24,GPIO.HIGH)
+	def playColumn(self):
+		self.pinSetUp()
+		for pin in range(5):
+			GPIO.output(self.pins[pin],GPIO.LOW)
+		self.pitches = self.getColumnPitches(self.playingColumn)
+		for pitch in self.pitches:
+			threading.Thread(target = lambda: self.playNote(self.notes[pitch])).start()
+			noteLetter = pitch % 5
+			self.lightLED(self.pins[noteLetter])
+		self.playingColumn = (self.playingColumn + 1) % self.gol.cols
+
 	def getColumnPitches(self, column):
 		pitches = set()
 		for cell in self.gol.board:
 			if cell[1] == column:
-				pitch = self.gol.rows - 1 - cell[0]
+				if cell[0] >= 25:
+					pitch = self.gol.rows - 1 - cell[0]
+				else:
+					pitch = cell[0]
 				pitches.add(pitch)
 		return pitches
 
-	def playColumn(self):
-		self.pitches = self.getColumnPitches(self.playingColumn)
-		for pitch in self.pitches:
-			self.playPitch(pitch)
-			note = pitch % 5
-			self.lightLED(note)
-		self.playingColumn = (self.playingColumn + 1) % self.gol.cols
-		# GPIO cleanup
+	def playNote(self, note):
+		wf = wave.open(str(note) + ".wav", 'rb')
+		p = pyaudio.PyAudio()
 
-	def playPitch(self, pitch):
-		# Play with audio library
+		def callback(in_data, frame_count, time_info, status):
+		    data = wf.readframes(frame_count)
+		    return (data, pyaudio.paContinue)
 
-	def lightLED(self, note):
-		GPIO.cleanup()
-		GPIO.output(18,GPIO.HIGH)
-		GPIO.output(24,GPIO.HIGH)
-		GPIO.output(self.pins[note],GPIO.HIGH)
+		stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+		                channels=wf.getnchannels(),
+		                rate=wf.getframerate(),
+		                output=True,
+		                stream_callback=callback)
+
+		stream.start_stream()
+		while stream.is_active():
+		    time.sleep(0.01)
+
+		stream.stop_stream()
+		stream.close()
+		wf.close()
+		p.terminate()
+
+	def lightLED(self, pin):
+		self.pinSetUp()
+		GPIO.output(pin,GPIO.HIGH)
+
 
 class Interface:
 # Class that represents the interface and all its elements. Automatically initializes GOL class.
@@ -179,6 +213,8 @@ class Interface:
 
 	def redrawAll(self):
 		self.canvas.delete(ALL)
+		if not self.gol.paused:
+			self.canvas.create_rectangle((self.cellSize*self.music.playingColumn, 0), (self.cellSize*(self.music.playingColumn+1), self.cellSize*self.gol.rows), fill = "gray")
 		for cell in self.gol.board:
 			row, col = cell
 			self.canvas.create_rectangle((self.cellSize*col, self.cellSize*row), (self.cellSize*(col+1), self.cellSize*(row+1)), fill = "white")
@@ -232,7 +268,17 @@ class Interface:
 	def randomButton(self):
 		self.gol.random(self.gol.rows)
 		self.gol.paused = True
-
+def turnOffLights():
+	GPIO.setmode(GPIO.BCM)
+	GPIO.setup(18,GPIO.OUT)
+	GPIO.setup(19,GPIO.OUT)
+	GPIO.setup(20,GPIO.OUT)
+	GPIO.setup(21,GPIO.OUT)
+	GPIO.setup(22,GPIO.OUT)
+	GPIO.setup(23,GPIO.OUT)
+	GPIO.setup(24,GPIO.OUT)
+	for i in range(18,25):
+		GPIO.output(i,GPIO.LOW)
 # RUN
 gol = GOL(50, 50)
 main = Interface(gol)
