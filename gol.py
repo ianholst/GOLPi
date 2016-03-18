@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter.ttk import *
 import RPi.GPIO as GPIO
 import random
-import pyaudio
+import pyglet
 import wave
 import time
 import threading
@@ -80,6 +80,7 @@ class Music:
 					7:"F3", 8:"G3", 9:"A3", 10:"C4", 11:"D4", 12:"F4", 13:"G4", 
 					14:"A4", 15:"C5", 16:"D5", 17:"F5", 18:"G5", 19:"A5", 20:"C6", 
 					21:"D6", 22:"F6", 23:"G6", 24:"A6"}
+
 	def pinSetUp(self):
 		GPIO.setmode(GPIO.BCM)
 		GPIO.setup(18,GPIO.OUT)
@@ -91,13 +92,15 @@ class Music:
 		GPIO.setup(24,GPIO.OUT)
 		GPIO.output(18,GPIO.HIGH)
 		GPIO.output(24,GPIO.HIGH)
+
 	def playColumn(self):
 		self.pinSetUp()
 		for pin in range(5):
 			GPIO.output(self.pins[pin],GPIO.LOW)
 		self.pitches = self.getColumnPitches(self.playingColumn)
 		for pitch in self.pitches:
-			threading.Thread(target = lambda: self.playNote(self.notes[pitch])).start()
+			#threading.Thread(target=self.playNote(self.notes[pitch])).start()
+			self.playNote(self.notes[pitch])
 			noteLetter = pitch % 5
 			self.lightLED(self.pins[noteLetter])
 		self.playingColumn = (self.playingColumn + 1) % self.gol.cols
@@ -110,31 +113,11 @@ class Music:
 					pitch = self.gol.rows - 1 - cell[0]
 				else:
 					pitch = cell[0]
-				pitches.add(pitch)
+				pitches.add(int(pitch))
 		return pitches
 
 	def playNote(self, note):
-		wf = wave.open(str(note) + ".wav", 'rb')
-		p = pyaudio.PyAudio()
-
-		def callback(in_data, frame_count, time_info, status):
-		    data = wf.readframes(frame_count)
-		    return (data, pyaudio.paContinue)
-
-		stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
-		                channels=wf.getnchannels(),
-		                rate=wf.getframerate(),
-		                output=True,
-		                stream_callback=callback)
-
-		stream.start_stream()
-		while stream.is_active():
-		    time.sleep(0.01)
-
-		stream.stop_stream()
-		stream.close()
-		wf.close()
-		p.terminate()
+		pyglet.media.load(note + ".wav", streaming=False).play()
 
 	def lightLED(self, pin):
 		self.pinSetUp()
@@ -161,7 +144,7 @@ class Interface:
 		self.root.minsize(width=self.windowWidth, height=self.windowHeight)
 		self.root.maxsize(width=self.windowWidth, height=self.windowHeight)
 
-		self.root.attributes('-fullscreen', True)
+		#self.root.attributes('-fullscreen', True)
 		self.canvas = Canvas(self.root, width=self.canvasSize, height=self.canvasSize, background = "black")
 		# Buttons
 		self.playPauseButton = Button(self.root, text="Play/Pause", command=self.playPauseButton)
