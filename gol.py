@@ -81,8 +81,9 @@ class Music:
 					14:"A4", 15:"C5", 16:"D5", 17:"F5", 18:"G5", 19:"A5", 20:"C6", 
 					21:"D6", 22:"F6", 23:"G6", 24:"A6"}
 		self.leds = LED()
+		leds.pinSetUp()
 		self.notePins = {0:19,1:20,2:21,3:22,4:23}
-		pyglet.options['audio'] = ('directsound', 'silent')
+		pyglet.options['audio'] = ('directsound', 'openal', 'silent')
 
 
 	def playColumn(self):
@@ -126,11 +127,10 @@ class LED:
 		GPIO.setup(22,GPIO.OUT)
 		GPIO.setup(23,GPIO.OUT)
 		GPIO.setup(24,GPIO.OUT)
-		GPIO.output(18,GPIO.HIGH)
-		GPIO.output(24,GPIO.HIGH)
 
 	def resetLEDs(self):
-		self.pinSetUp()
+		GPIO.output(18,GPIO.HIGH)
+		GPIO.output(24,GPIO.HIGH)
 		for pin in range(19,24):
 			GPIO.output(pin,GPIO.LOW)
 
