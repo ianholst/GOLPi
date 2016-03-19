@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter.ttk import *
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 import random
 import pyglet
 #import threading
