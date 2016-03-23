@@ -3,7 +3,7 @@ from tkinter.ttk import *
 #import RPi.GPIO as GPIO
 import random
 import pyglet
-#import threading
+import threading
 
 class GOL:
 # Class that represents the Game of Life object
@@ -15,7 +15,7 @@ class GOL:
 		self.rows = rows
 		self.cols = cols
 		# Game rules
-		self.stay = [2,3]
+		self.stay = [0,1,2,3,4,5,6,7,8]
 		self.begin = [3]
 		# Begin paused
 		self.paused = True
@@ -80,21 +80,15 @@ class Music:
 					7:"F3", 8:"G3", 9:"A3", 10:"C4", 11:"D4", 12:"F4", 13:"G4", 
 					14:"A4", 15:"C5", 16:"D5", 17:"F5", 18:"G5", 19:"A5", 20:"C6", 
 					21:"D6", 22:"F6", 23:"G6", 24:"A6"}
+		self.noteSounds = []
+		# Load sound files into memory
+		for x in range(25):
+			self.noteSounds += [pyglet.media.load("notes/" + self.notes[x] + ".wav", streaming=False)]
 		self.leds = LED()
 		self.notePins = {0:19,1:20,2:21,3:22,4:23}
 		pyglet.options['audio'] = ('directsound', 'openal', 'silent')
-
-	def playColumn(self):
-		if self.leds.displaying:
-			self.leds.resetLEDs()
-		self.pitches = self.getColumnPitches(self.playingColumn)
-		for pitch in self.pitches:
-			#threading.Thread(target=self.playNote(self.notes[pitch])).start()
-			self.playNote(self.notes[pitch])
-			noteLetter = pitch % 5
-			if self.leds.displaying:
-				self.leds.lightLED(self.notePins[noteLetter])
-		self.playingColumn = (self.playingColumn + 1) % self.gol.cols
+		self.soundQueue = []
+		self.maxSoundQueueLength = 100
 
 	def getColumnPitches(self, column):
 		pitches = set()
@@ -107,9 +101,29 @@ class Music:
 				pitches.add(int(pitch))
 		return pitches
 
-	def playNote(self, note):
-		pyglet.media.load("notes/" + note + ".wav", streaming=False).play()
+	def playColumn(self):
+		if self.leds.displaying:
+			self.leds.resetLEDs()
+		self.pitches = self.getColumnPitches(self.playingColumn)
+		for pitch in self.pitches:
+			#threading.Thread(target=self.playNote(self.notes[pitch])).start()
+			#self.playNote(self.notes[pitch])
+			self.playNote(pitch)
+			noteLetter = pitch % 5
+			if self.leds.displaying:
+				self.leds.lightLED(self.notePins[noteLetter])
+		self.playingColumn = (self.playingColumn + 1) % self.gol.cols
 
+	def playNote(self, pitch):
+		x = pyglet.media.Player()
+		#sound = pyglet.media.load("notes/" + note + ".wav", streaming=False)
+		x.queue(self.noteSounds[pitch])
+		x.play()
+		self.soundQueue.insert(0, x)
+		if len(self.soundQueue) >= self.maxSoundQueueLength:
+			d = self.soundQueue.pop()
+			d.delete()
+		print(len(self.soundQueue))
 
 class LED:
 
@@ -146,8 +160,8 @@ class Interface:
 	def __init__(self, gol):
 		# Initialize game of life instance
 		self.gol = gol
-		self.windowWidth = 800
-		self.windowHeight = 480
+		self.windowWidth = 1400#800
+		self.windowHeight = 1000#480
 		self.canvasSize = self.windowHeight
 		self.cellSize = self.windowHeight / self.gol.rows
 
