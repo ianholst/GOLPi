@@ -1,9 +1,11 @@
 from tkinter import *
 from tkinter.ttk import *
-#import RPi.GPIO as GPIO
 import random
 import pyglet
 import threading
+import sys
+if sys.platform.startswith('linux'):
+	import RPi.GPIO as GPIO
 
 class GOL:
 # Class that represents the Game of Life object
@@ -15,13 +17,14 @@ class GOL:
 		self.rows = rows
 		self.cols = cols
 		# Game rules
-		self.stay = [0,1,2,3,4,5,6,7,8]
+		self.stay = [2,3]
 		self.begin = [3]
 		# Begin paused
-		self.paused = True
+		self.playing = False
 		self.speeds = [1,10,100,250,500,1000] #milliseconds
 		self.speedIndex = 3
-		self.timerDelay = self.speeds[self.speedIndex]
+		self.pausedTimerDelay = 10
+		self.timerDelay = self.pausedTimerDelay
 		self.neighbors = [(-1,-1), (-1, 0), (-1, 1),
 						  ( 0,-1),          ( 0, 1),
 						  ( 1,-1), ( 1, 0), ( 1, 1)]
@@ -123,7 +126,6 @@ class Music:
 		if len(self.soundQueue) >= self.maxSoundQueueLength:
 			d = self.soundQueue.pop()
 			d.delete()
-		print(len(self.soundQueue))
 
 class LED:
 
@@ -172,9 +174,12 @@ class Interface:
 		self.root = Tk()
 		self.root.title("GOL")
 		self.root.minsize(width=self.windowWidth, height=self.windowHeight)
-		#self.root.maxsize(width=self.windowWidth, height=self.windowHeight)
-		self.root.attributes('-fullscreen', True)
+		if sys.platform.startswith('linux'):
+			self.root.maxsize(width=self.windowWidth, height=self.windowHeight)
+			self.root.attributes('-fullscreen', True)
 		self.canvas = Canvas(self.root, width=self.canvasSize, height=self.canvasSize, background = "black")
+		self.speedIndicator = StringVar()
+		self.speedIndicator.set("Speed: " + str(int(1000/self.gol.speeds[self.gol.speedIndex])) + " generations/second")
 
 		# Load images
 		self.playIcon = PhotoImage(file="icons/play.png")
@@ -199,7 +204,7 @@ class Interface:
 		self.pencilEraserButton = Button(self.root, image=self.eraserIcon, command=self.pencilEraserButton)
 		self.clearButton = Button(self.root, image=self.clearIcon, command=self.clearButton)
 		self.randomButton = Button(self.root, image=self.randomIcon, command=self.randomButton)
-		self.speedLabel = Label(self.root, text="Speed: " + str(int(1000/self.gol.timerDelay)) + " generations/second")
+		self.speedLabel = Label(self.root, textvariable=self.speedIndicator)
 		self.musicButton = Button(self.root, image=self.musicOffIcon, command=self.musicButton)
 		self.LEDButton = Button(self.root, image=self.LEDOffIcon, command=self.LEDButton)
 		self.sensorButton = Button(self.root, image=self.sensorOffIcon, command=self.sensorButton)
@@ -239,7 +244,7 @@ class Interface:
 		self.root.mainloop()
 
 	def timerFired(self):
-		if not self.gol.paused:
+		if self.gol.playing:
 			self.gol.generation()
 			if self.music.playing:
 				self.music.playColumn()
@@ -248,7 +253,7 @@ class Interface:
 
 	def redrawAll(self):
 		self.canvas.delete(ALL)
-		if not self.gol.paused and self.music.playing:
+		if self.gol.playing and self.music.playing:
 			self.canvas.create_rectangle((self.cellSize*self.music.playingColumn, 0), (self.cellSize*(self.music.playingColumn+1), self.cellSize*self.gol.rows), fill = "gray")
 		for cell in self.gol.board:
 			row, col = cell
@@ -265,25 +270,28 @@ class Interface:
 				self.gol.board.discard((row, col))
 		self.canvas.update()
 
-	def playPauseButton(self):
-		if self.gol.paused:
-			self.gol.paused = False
-			self.playPauseButton.config(image=self.pauseIcon)
-		else:
-			self.gol.paused = True
+	def togglePlaying(self):
+		if self.gol.playing:
+			self.gol.playing = False
+			self.gol.timerDelay = self.gol.pausedTimerDelay
 			self.playPauseButton.config(image=self.playIcon)
+		else:
+			self.gol.playing = True
+			self.gol.timerDelay = self.gol.speeds[self.gol.speedIndex]
+			self.playPauseButton.config(image=self.pauseIcon)
+
+	def playPauseButton(self):
+		self.togglePlaying()
 
 	def slowerButton(self):
 		if self.gol.timerDelay != self.gol.speeds[-1]:
 			self.gol.speedIndex += 1
 			self.gol.timerDelay = self.gol.speeds[self.gol.speedIndex]
-			self.speedLabel.config(text="Speed: " + str(int(1000/self.gol.timerDelay)) + " generations/second")
 
 	def fasterButton(self):
 		if self.gol.timerDelay != self.gol.speeds[0]:
 			self.gol.speedIndex -= 1
 			self.gol.timerDelay = self.gol.speeds[self.gol.speedIndex]
-			self.speedLabel.config(text="Speed: " + str(int(1000/self.gol.timerDelay)) + " generations/second")
 
 	def pencilEraserButton(self):
 		if self.drawMode == "draw":
@@ -295,13 +303,11 @@ class Interface:
 
 	def clearButton(self):
 		self.gol.clear()
-		self.gol.paused = True
-		self.playPauseButton.config(image=self.playIcon)
+		self.togglePlaying()
 
 	def randomButton(self):
 		self.gol.random(self.gol.rows)
-		self.gol.paused = True
-		self.playPauseButton.config(image=self.playIcon)
+		self.togglePlaying()
 
 	def musicButton(self):
 		if self.music.playing:
@@ -327,7 +333,8 @@ class Interface:
 		pass
 
 # RUN
-gol = GOL(25, 25)
+gol = GOL(50, 50)
 main = Interface(gol)
 main.run()
-main.music.leds.turnOffLEDs()
+if sys.platform.startswith('linux'):
+	main.music.leds.turnOffLED
