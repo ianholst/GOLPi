@@ -17,8 +17,8 @@ class GOL:
 		self.rows = rows
 		self.cols = cols
 		# Game rules
-		self.stay = [2,3]
-		self.begin = [3]
+		self.stay = [2,3]#[0,1,2,3,4,5,6,7,8]#[2,3]
+		self.begin = [3]#[1,2,3,4,5,6,7,8]#[3]
 		# Begin paused
 		self.playing = False
 		self.speeds = [1,10,100,250,500,1000] #milliseconds
@@ -79,9 +79,9 @@ class Music:
 		self.playing = False
 		self.playingColumn = 0
 		self.gol = gol
-		self.notes = {0:"C2", 1:"D2", 2:"F2", 3:"G2", 4:"A2", 5:"C3", 6:"D3", 
-					7:"F3", 8:"G3", 9:"A3", 10:"C4", 11:"D4", 12:"F4", 13:"G4", 
-					14:"A4", 15:"C5", 16:"D5", 17:"F5", 18:"G5", 19:"A5", 20:"C6", 
+		self.notes = {0:"C2", 1:"D2", 2:"F2", 3:"G2", 4:"A2", 5:"C3", 6:"D3",
+					7:"F3", 8:"G3", 9:"A3", 10:"C4", 11:"D4", 12:"F4", 13:"G4",
+					14:"A4", 15:"C5", 16:"D5", 17:"F5", 18:"G5", 19:"A5", 20:"C6",
 					21:"D6", 22:"F6", 23:"G6", 24:"A6"}
 		self.noteSounds = []
 		# Load sound files into memory
